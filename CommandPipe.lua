@@ -1,12 +1,15 @@
 --LuaCommandPipe
 
-local CommandPipe_Handle_Label,CommandPipe_OutputFileName_Label,CommandPipe_OutputContentLastPosition_Label=1,2,3
+local CommandPipe_Handle_Label
+	,CommandPipe_OutputFileName_Label
+	,CommandPipe_OutputContentLastPosition_Label
+	,CommandPipe_OutputFile_Agent_Label=1,2,3,4
 
-local function New_CommandPipe_Handle(commandPipe,initial_outputFileName)
+local function New_CommandPipe_Handle(commandPipe,outputFileName)
 	local commandPipe_handle=io.popen('cmd /q /k'
 		--	/Q: Turns echo off
 		--	/K: Carries out the command specified by string but remains
-		..(initial_outputFileName~=nil and '>nul' or 'prompt $+')
+		..(outputFileName~=nil and '>nul' or 'prompt $+')
 		--	$H: hide prompt, see `prompt /?`. 但在Output window里显示为[BS]控制字符。
 		--	$_: Carriage return and linefeed. 会造成额外的换行
 		--	$+: zero or more plus sign (+) characters depending upon the
@@ -15,22 +18,38 @@ local function New_CommandPipe_Handle(commandPipe,initial_outputFileName)
 	,'w')
 	commandPipe_handle:setvbuf('line')
 	rawset(commandPipe,CommandPipe_Handle_Label,commandPipe_handle)
-	rawset(commandPipe,CommandPipe_OutputFileName_Label,initial_outputFileName)
+	if outputFileName=='' then--handle filename internally
+		outputFileName='.'..os.tmpname()..'.tmp'
+		--	tmpname '\\xxxx' > '.\\xxxx'
+		rawset(commandPipe,CommandPipe_OutputFile_Agent_Label,true)
+	end
+	rawset(commandPipe,CommandPipe_OutputFileName_Label,outputFileName)
+end
+local function Close_CommandPipe_Handle(commandPipe)
+	local commandPipe_handle=rawget(commandPipe,CommandPipe_Handle_Label)
+	if io.type(commandPipe_handle)=='file' then
+		commandPipe'exit'
+		commandPipe_handle:close()
+	end
+	if commandPipe_handle then
+		rawset(commandPipe,CommandPipe_Handle_Label,nil)
+	end
 end
 local Metatable_CommandPipe={} do
 	function Metatable_CommandPipe.__gc(commandPipe)
-		local commandPipe_handle=rawget(commandPipe,CommandPipe_Handle_Label)
-		if commandPipe_handle then
-			commandPipe'exit'
-			commandPipe_handle:close()
-			rawset(commandPipe,CommandPipe_Handle_Label,nil)
+		Close_CommandPipe_Handle(commandPipe)
+		local commandPipe_OutputFile_Agent=rawget(commandPipe,CommandPipe_OutputFile_Agent_Label)
+		if commandPipe_OutputFile_Agent then
+			local outputFileName=rawget(commandPipe,CommandPipe_OutputFileName_Label)
+			assert(os.remove(outputFileName),'cant remove tmpfile for recieving output.')
+			rawset(commandPipe,CommandPipe_OutputFileName_Label,nil)
 		end
 	end
 	function Metatable_CommandPipe.__call(commandPipe,command)--execute command, wait finish, stop
 		local commandPipe_handle=rawget(commandPipe,CommandPipe_Handle_Label)
 		local outputFileName=rawget(commandPipe,CommandPipe_OutputFileName_Label)
 		if not command then--close / wait finish
-			Metatable_CommandPipe.__gc(commandPipe)
+			Close_CommandPipe_Handle(commandPipe)
 			local output_file_content
 			if outputFileName then--read output file content
 				local output_file_handle=io.open(outputFileName)
@@ -51,9 +70,9 @@ local Metatable_CommandPipe={} do
 				end
 			end
 			return output_file_content
-		else;assert(type(command)=='string')
-			assert(commandPipe_handle,'command pipe already closed')
-				:write(
+		else;assert(type(command)=='string','command should be string')--execute command
+			assert(io.type(commandPipe_handle)=='file','command pipe already closed')
+			commandPipe_handle:write(
 					(outputFileName
 						and '3>>'..outputFileName..' 1>>&3 2>>&3 '
 						or '')
@@ -69,10 +88,10 @@ local Metatable_CommandPipe={} do
 	end
 	Metatable_CommandPipe.__index=Metatable_CommandPipe.__call
 end
-local function CommandPipe(initial_outputFileName)
-	assert(not initial_outputFileName or type(initial_outputFileName)=='string')
+local function CommandPipe(outputFileName)
+	assert(not outputFileName or type(outputFileName)=='string')
 	local commandPipe={}
-	New_CommandPipe_Handle(commandPipe,initial_outputFileName)
+	New_CommandPipe_Handle(commandPipe,outputFileName)
 	setmetatable(commandPipe,Metatable_CommandPipe)
 	return commandPipe
 end

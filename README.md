@@ -9,6 +9,11 @@
 - 无需等待返回结果，
 - 高频使用`io.popen`（或可取代`os.execute`）的情况。
 
+除此，相应的，
+
+- 需要*等待*执行完毕时，使用`os.execute`；
+- 同时需要*返回值*时，使用`io.popen(..,'r')`
+
 ## 函数
 
 `commandPipe=CommandPipe(initial_outputStreamName)`
@@ -17,7 +22,8 @@
 
   - `nil`: 相当于`stdout`；
   - `false`: 相当于`nul`；
-  - `filename`。或可使用`os.tmpname()`。
+  - `filename`。
+  - `''`（empty string）：内部维护`os.tmpname()`。
 
 - `commandPipe`函数
 
@@ -42,18 +48,23 @@
 
 ## 测试
 
-test.lua:
+详见：[test.lua](./test.lua)。用例（展示部分）：
 
 ```lua
-commandPipe['echo hello']
-    'echo world'
+commandPipe=CommandPipe''	--'': use tmpfile to receive output internally
+print(commandPipe'echo %OS%')	--equal `os.getenv'OS'`
+```
+
+```lua
+commandPipe['echo hello']	--index
+    'echo world'		  	--call
     'ping 192.0.0.0 -n 1 -w 2000 >nul'
     'echo time is %time%'
-commandPipe'echo goodbye'
+commandPipe'echo goodbye'()	--(): wait execute finish
 ...
 ```
 
-结果
+结果（展示部分）：
 
 ```bat
 Test basic use:
@@ -72,4 +83,3 @@ test done. result is OK
 
 All finish
 ```
-

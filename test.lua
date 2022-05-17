@@ -15,15 +15,26 @@ local function get_output()
 end
 
 local CommandPipe=require'CommandPipe'
+local commandPipe
 
 if print'Test basic use:'
 	or true
 	then
+	commandPipe=CommandPipe''
+	--	output to tmpfile maintain internally
+	assert(commandPipe'echo %OS%'()==os.getenv'OS'..'\n')
+	local CommandPipe_OutputFileName_Label=2
+	local outputFileName=rawget(commandPipe,CommandPipe_OutputFileName_Label)
+	assert(io.open(outputFileName)):close()--exist
+	commandPipe=nil
+	collectgarbage'collect'
+	assert(not io.open(outputFileName))--delete automatic
+	------------
 	local output_method=nil
 		--	nil: stdout, false: nul, <filename>
 --		or false
 		or Output_File_Name
-	local commandPipe=CommandPipe(output_method
+	commandPipe=CommandPipe(output_method
 	)
 	local _=commandPipe['echo hello']
 		'echo world'
