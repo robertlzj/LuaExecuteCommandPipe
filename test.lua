@@ -22,7 +22,7 @@ if print'Test basic use:'
 	then
 	commandPipe=CommandPipe''
 	--	output to tmpfile maintain internally
-	assert(commandPipe'echo %OS%'()==os.getenv'OS'..'\n')
+	assert(commandPipe['echo %OS%']==os.getenv'OS'..'\n')
 	local CommandPipe_OutputFileName_Label=2
 	local outputFileName=rawget(commandPipe,CommandPipe_OutputFileName_Label)
 	assert(io.open(outputFileName)):close()--exist
@@ -36,7 +36,7 @@ if print'Test basic use:'
 		or Output_File_Name
 	commandPipe=CommandPipe(output_method
 	)
-	local _=commandPipe['echo hello']
+	local _=commandPipe'echo hello'
 		'echo world'
 		--	auto insert new line after each command
 		'ping 192.0.0.0 -n 1 -w 2000 >nul'

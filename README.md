@@ -27,7 +27,7 @@
 
 - `commandPipe`函数
 
-  - `commandPipe'command'`、`commandPipe['command']`：执行命令。
+  - `commandPipe'command'`：执行命令。
     
     - **命令**间，*等待*（wait / hang / block）。前一命令执行完后才执行下一命令。
       使用CMD中的管道(pipe `|`)使并行执行(asynchronous parallel)。
@@ -35,8 +35,11 @@
     
     返回自身，支持链式语法`commandPipe'command''command2'..`。
     
+  - `commandPipe['command']`：执行命令，返回结果。
+    相当于`commandPipe'command'`+（如下的）`outputContent=commandPipe()`。
+  
   - `outputContent=commandPipe()`：等待返回（阻塞），如果指定了filename，返回自上次以来的结果。
-    也可以自行读取输出文件，但无法掌握时机。
+    不使用此函数，也可以自行读取输出文件，但无法掌握时机。
     可配合协程(coroutine)，减小无用等待。
   
   - `outputContent=commandPipe(false)`：关闭。
@@ -52,12 +55,12 @@
 
 ```lua
 commandPipe=CommandPipe''	--'': use tmpfile to receive output internally
-print(commandPipe'echo %OS%')	--equal `os.getenv'OS'`
+print(commandPipe['echo %OS%'])	--equal `os.getenv'OS'`
 ```
 
 ```lua
-commandPipe['echo hello']	--index
-    'echo world'		  	--call
+commandPipe'echo hello'
+    'echo world'
     'ping 192.0.0.0 -n 1 -w 2000 >nul'
     'echo time is %time%'
 commandPipe'echo goodbye'()	--(): wait execute finish

@@ -86,7 +86,10 @@ local Metatable_CommandPipe={} do
 		assert(type(commandPipe)=='table' and getmetatable(commandPipe)==Metatable_CommandPipe)
 		return commandPipe(b)
 	end
-	Metatable_CommandPipe.__index=Metatable_CommandPipe.__call
+	function Metatable_CommandPipe.__index(self,command)
+		self(command)
+		return self()
+	end
 end
 local function CommandPipe(outputFileName)
 	assert(not outputFileName or type(outputFileName)=='string')
