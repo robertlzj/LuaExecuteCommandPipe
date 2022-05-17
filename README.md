@@ -42,6 +42,8 @@ commandPipe'echo goodbye'
 ...
 ```
 
+可尝试设置(customer)`output_method`、`count`。
+
 结果
 
 ```bat
@@ -62,3 +64,4 @@ test done. result is OK
 All finish
 ```
 
+基础概念来自前一个尝试[LuaCommandBatchLoop](https://github.com/robertlzj/LuaCommandBatchLoop)。

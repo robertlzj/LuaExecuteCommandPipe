@@ -19,10 +19,11 @@ local CommandPipe=require'CommandPipe'
 if print'Test basic use:'
 	or true
 	then
-	local commandPipe=CommandPipe(nil
+	local output_method=nil
 		--	nil: stdout, false: nul, <filename>
-	--	or false
+--		or false
 		or Output_File_Name
+	local commandPipe=CommandPipe(output_method
 	)
 	local _=commandPipe['echo hello']
 		'echo world'
@@ -42,12 +43,14 @@ goodbye]]))
 	end
 	
 	print'close'
-	assert(''==commandPipe(false))--close, nothing remain to return
+	output_content=commandPipe(false)
+	assert(''==output_content or not output_method)--close, nothing remain to return
 	local result={pcall(commandPipe,'anything')}
 	assert(result[1]==false and string.find(result[2],'command pipe already closed'))
 	
 	print'restart'
-	assert(''==commandPipe())
+	output_content=commandPipe()
+	assert(''==output_content or not output_method)
 	commandPipe'echo restart'
 	
 	
@@ -56,7 +59,8 @@ goodbye]]))
 		assert(output_content=='restart\n')--continue esult left
 	end
 	
-	assert(''==commandPipe(false))
+	output_content=commandPipe(false)
+	assert(''==output_content or not output_method)
 	print'test done. result is OK'
 	os.remove(Output_File_Name)
 else;print'skip'
