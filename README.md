@@ -5,25 +5,36 @@
 使用重定向(redirect)与中间文件（或`stdout`），获取(流1)返回值。
 执行命令是异步(asynchronous)的，写入命令后便返回Lua，但可以通过关闭句柄（随后再新建打开），等待命令处理完毕(wait until finish)，正确获取返回值。
 
+效果明显。特别适用于：
+- 无需等待返回结果，
+- 高频使用`io.popen`（或可取代`os.execute`）的情况。
+
 ## 函数
 
 `commandPipe=CommandPipe(initial_outputStreamName)`
 
 - `initial_outputStreamName`：初始输出流，可以在命令中覆盖掉。
 
-  - `nil`: 相当于`stdout`
-  - `false`: 相当于`nul`
-  - `filename`
+  - `nil`: 相当于`stdout`；
+  - `false`: 相当于`nul`；
+  - `filename`。或可使用`os.tmpname()`。
 
 - `commandPipe`函数
 
-  - `commandPipe'command'`、`commandPipe['command']`：执行命令，异步。
+  - `commandPipe'command'`、`commandPipe['command']`：执行命令。
+    
+    - **命令**间，*等待*（wait / hang / block）。前一命令执行完后才执行下一命令。
+      使用CMD中的管道(pipe `|`)使并行执行(asynchronous parallel)。
+    - ***函数*** *不*等待*命令*。函数继续执行，*不等待*命令执行完毕。
+    
     返回自身，支持链式语法`commandPipe'command''command2'..`。
-
+    
   - `outputContent=commandPipe()`：等待返回（阻塞），如果指定了filename，返回自上次以来的结果。
-
+    也可以自行读取输出文件，但无法掌握时机。
+    可配合协程(coroutine)，减小无用等待。
+  
   - `outputContent=commandPipe(false)`：关闭。
-
+  
     如果有输出文件，重置。
     意义不大，可以等自动回收(GC)。
     关闭后使用`commandPipe()`再打开。
@@ -41,8 +52,6 @@ commandPipe['echo hello']
 commandPipe'echo goodbye'
 ...
 ```
-
-可尝试设置(customer)`output_method`、`count`。
 
 结果
 
@@ -64,4 +73,3 @@ test done. result is OK
 All finish
 ```
 
-基础概念来自前一个尝试[LuaCommandBatchLoop](https://github.com/robertlzj/LuaCommandBatchLoop)。

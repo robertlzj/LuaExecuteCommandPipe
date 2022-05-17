@@ -38,7 +38,7 @@ if print'Test basic use:'
 	if output_content then
 		assert(string.find(output_content,[[hello
 world
-time is %d+:%d+:%d+.%d+
+time is %s*%d+:%d+:%d+.%d+
 goodbye]]))
 	end
 	
@@ -66,10 +66,41 @@ goodbye]]))
 else;print'skip'
 end;print''
 
+if print'Demo asynchronous of command & function'
+	or true
+	then
+	local commandPipe=CommandPipe()
+	print'[L:] output from Lua, [C:] output from command echo etc'
+	print'L: start'
+	commandPipe'prompt C: '
+	commandPipe'echo current time is: %time%'
+	commandPipe'echo sleep 2s & ping 192.0.0.0 -n 1 -w 2000 >nul'
+	commandPipe'echo after sleep, now is: %time%'
+	print'L: all command is sent, lua function wont wait'
+	commandPipe()print''
+	--	there is an empty line from command
+	print'L: Lua wait till `commandPipe()`'
+	print''----
+	commandPipe'cmd /q /v:on'
+	--	/q: Turns echo off
+	--	/v:on :  Enable delayed environment variable expansion (!var!)
+	commandPipe'prompt C: '
+	print'L: same result in single command line'
+	commandPipe'echo !time! & ping 192.0.0.0 -n 1 -w 2000 >nul & echo !time!'
+	print'L: use pipe to get parallel command'
+	commandPipe'echo !time! >&2 | ping 192.0.0.0 -n 1 -w 2000 >nul | echo !time! >&2'
+	--	stream #2 output to stdout.
+	--	in pipe #1 (output) is passed to next command's input
+	commandPipe()
+	
+	print'L: demo finish'
+else;print'skip'
+end;print''
+
 if print'Test time cost:'
 	or true
 	then
-	local count=50--loop to test time spend
+	local count=5--loop to test time spend
 	print('when repeat '..count..' times.')
 	local startTime
 	local expect_output_content do
